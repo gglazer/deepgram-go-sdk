@@ -54,13 +54,28 @@ func (c *RESTClient) SetupRequest(ctx context.Context, method, uri string, body 
 		}
 	}
 
-	req.Header.Set("Host", c.Options.Host)
-	req.Header.Set("Accept", "application/json")
-	req.Header.Set("Authorization", "token "+c.Options.APIKey)
-	req.Header.Set("User-Agent", interfaces.DgAgent)
-	req.Header.Set("Content-Type", "application/json")
+	setHeaderIfAbsent(ctx, req, "Host", c.Options.Host)
+	setHeaderIfAbsent(ctx, req, "Accept", "application/json")
+	setHeaderIfAbsent(ctx, req, "Authorization", "token "+c.Options.APIKey)
+	setHeaderIfAbsent(ctx, req, "User-Agent", interfaces.DgAgent)
+	setHeaderIfAbsent(ctx, req, "Content-Type", "application/json")
 
 	return req, nil
+}
+
+func setHeaderIfAbsent(ctx context.Context, req *http.Request, key, value string) {
+	if !hasCustomHeader(ctx, key) {
+		req.Header.Set(key, value)
+	}
+}
+
+func hasCustomHeader(ctx context.Context, key string) bool {
+	if headers, ok := ctx.Value(interfaces.HeadersContext{}).(http.Header); ok {
+		if _, exists := headers[key]; exists {
+			return true
+		}
+	}
+	return false
 }
 
 // HandleResponse processes the HTTP response for both streaming and URL-based API requests.
